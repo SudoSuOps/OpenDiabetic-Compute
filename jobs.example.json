@@ -1,0 +1,30 @@
+{
+  "_comment": "Sample NON-PHI foundation jobs. Every data ref is typed open:/synthetic:/model: — never a vault path. These are the kinds of work the hive does: serve open models, build education/synthetic datasets, run evals. Post one with: odc.py post-job --kind <kind> --model <model> --data <ref> --desc <text>",
+
+  "jobs": [
+    {
+      "kind": "model-serve",
+      "model": "diabetic-life-assistant-open",
+      "data": "open:diabetic-education-v1",
+      "desc": "serve the plain-language helper (no diagnosis; organization + education only)"
+    },
+    {
+      "kind": "dataset-build",
+      "model": "curator-open",
+      "data": "synthetic:diabetic-foot-care-qa",
+      "desc": "generate synthetic foot-care Q&A from open clinical guidelines"
+    },
+    {
+      "kind": "eval",
+      "model": "diabetic-life-assistant-open",
+      "data": "open:diabetic-knowledge-eval",
+      "desc": "score the open helper against an open knowledge benchmark"
+    },
+    {
+      "kind": "research",
+      "model": "analysis-open",
+      "data": "open:cdc-diabetes-statistics-2025",
+      "desc": "aggregate public CDC diabetes statistics for a research brief"
+    }
+  ]
+}

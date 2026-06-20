@@ -1,0 +1,12 @@
+# Live instance state + ledger stay local (donor node data, real receipts)
+.state/
+receipts/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*~
+*.swp
+.vscode/
+.idea/
+__pycache__/
