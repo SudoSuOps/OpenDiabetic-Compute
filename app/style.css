@@ -31,6 +31,12 @@ table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{background:#0e141b;text-align:left;padding:9px 11px;color:var(--mut);font-weight:600;white-space:nowrap}
 td{border-top:1px solid var(--line);padding:8px 11px;vertical-align:top}
 td.mono,.hash{font-family:ui-monospace,monospace;font-size:12px;color:var(--mut)}
+td.amt{font-weight:800;white-space:nowrap}
+tr.g-donation td:first-child{border-left:3px solid var(--blue)}
+tr.g-asset td:first-child{border-left:3px solid #9b8cff}
+tr.g-income td:first-child{border-left:3px solid var(--green)}
+tr.g-give td:first-child{border-left:3px solid var(--honey)}
+tr.g-job td:first-child{border-left:3px solid #ff9d57}
 .tab.hide{display:none}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;max-width:560px}
 .form{display:flex;flex-direction:column;gap:12px}

@@ -13,18 +13,19 @@ const authH = () => { const t = optoken.value.trim(); return t ? { "Authorizatio
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("hide", t.id !== b.dataset.tab));
+  if (b.dataset.tab === "give") loadGiving();
 });
 
 async function loadStats() {
   const s = await j("/api/stats");
   $("#stats").innerHTML = [
     ["nodes", s.nodes, "donated nodes"],
-    ["online", s.online, "online now"],
     ["done", s.jobs_done, "jobs run"],
-    ["receipts", s.compute_receipts, "compute receipts"],
     ["donated", money(s.donated_usd), "donated"],
+    ["given", money(s.given_usd), "given back"],
+    ["jobs", s.jobs_funded, "jobs created"],
     ["chain", s.chain_ok ? "✓" : "✗", "chain " + (s.chain_ok ? "intact" : "BROKEN")],
-  ].map(([k,v,l]) => `<div class="s"><b class="${k==='chain'?(s.chain_ok?'green':'red'):''}">${v}</b><span>${l}</span></div>`).join("");
+  ].map(([k,v,l]) => `<div class="s"><b class="${k==='chain'?(s.chain_ok?'green':'red'):(k==='given'?'green':'')}">${v}</b><span>${l}</span></div>`).join("");
   $("#chain").className = "pill " + (s.chain_ok ? "ok" : "bad");
   $("#chain").textContent = s.chain_ok ? `chain intact · ${s.chain_len} receipts` : `chain BROKEN @ ${s.chain_len}`;
 }
@@ -55,6 +56,25 @@ async function loadTables() {
 
 async function refresh(){ await loadStats(); await loadTables(); }
 
+async function loadGiving() {
+  const { receipts, totals } = await j("/api/giving");
+  $("#gchain").className = "pill " + (totals.chain_ok ? "ok" : "bad");
+  $("#gchain").textContent = totals.chain_ok ? `chain intact · ${totals.count} receipts` : `BROKEN @ ${totals.count}`;
+  const detail = r => ({
+    donation: `<b>${esc(r.donor)}</b> donated ${esc(r.item)}`,
+    asset: `<b>${esc(r.asset_id)}</b> (${esc(r.asset_type)}) hosted by ${esc(r.hosted_by)}`,
+    income: `<b>${esc(r.asset_id)}</b> earned from ${esc(r.source)}`,
+    give: `${esc(r.need)} → <b>${esc(r.recipient)}</b> · by ${esc(r.fulfilled_by)}`,
+    job: `<b>${esc(r.worker)}</b> — ${esc(r.task)}`,
+  }[r.kind] || esc(r.kind));
+  const amt = r => r.kind === "donation" ? money(r.value_usd) : r.kind === "income" ? "+" + money(r.amount_usd)
+    : r.kind === "give" ? (r.value_usd ? money(r.value_usd) : "in-kind") : r.kind === "job" ? money(r.pay_usd) : "";
+  $("#giving tbody").innerHTML = receipts.length ? receipts.map(r => `<tr class="g-${r.kind}">
+    <td>#${r.seq}</td><td>${esc(r.kind)}</td><td>${detail(r)}</td><td class="amt">${amt(r)}</td>
+    <td class="hash">${esc((r.hash||"").slice(0,16))}…</td></tr>`).join("")
+    : `<tr><td colspan="5" class="muted">no gifts recorded yet</td></tr>`;
+}
+
 // donate
 $("#donateForm").onsubmit = async e => {
   e.preventDefault();
@@ -62,7 +82,7 @@ $("#donateForm").onsubmit = async e => {
   const body = {donor:f.donor.value, form:f.form.value, item:f.item.value, value_usd:f.value_usd.value, note:f.note.value};
   try {
     const out = await j("/api/donate", {method:"POST", headers:{"Content-Type":"application/json", ...authH()}, body:JSON.stringify(body)});
-    if (out.ok){ r.className="result ok"; r.textContent=`Thank you 🐝 recorded on the chain — receipt #${out.seq} (${out.hash.slice(0,12)}…)`; f.reset(); refresh(); }
+    if (out.ok){ r.className="result ok"; r.textContent=`Thank you 🐝 recorded on the giving chain — receipt #${out.seq} (${out.hash.slice(0,12)}…)`; f.reset(); refresh(); loadGiving(); }
     else { r.className="result bad"; r.textContent = out.error || "error"; }
   } catch { r.className="result bad"; r.textContent="could not reach the hive"; }
 };

@@ -23,27 +23,30 @@ import os
 import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-import odc  # reuse registry / firewall / ledger primitives
+import odc      # reuse registry / firewall / compute-ledger primitives
+import giving   # the hash-chained GIVING ledger (donation->asset->income->give->job)
 
 TOKEN_FILE = os.path.join(odc.STATE_DIR, "worker_token")
 APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app")
 
 
 def stats():
-    """Public, no-PHI rollup for the OpenDiabetic ops dashboard."""
+    """Public, no-PHI rollup for the OpenDiabetic ops dashboard — compute + giving."""
     nodes = odc.load_nodes()
     jobs = odc.load_jobs()
     led = odc.load_ledger()
     ok, n = odc.verify_ledger()
-    t = {"nodes": len(nodes), "online": sum(1 for x in nodes.values() if x.get("status") in ("available", "busy")),
-         "jobs_done": sum(1 for j in jobs.values() if j.get("status") == "done"),
-         "jobs_queued": sum(1 for j in jobs.values() if j.get("status") == "queued"),
-         "compute_receipts": sum(1 for r in led if r.get("kind") == "compute-receipt"),
-         "gpu_seconds": sum(r.get("gpu_seconds", 0) for r in led),
-         "donations": sum(1 for r in led if r.get("kind") == "donation"),
-         "donated_usd": sum(r.get("value_usd", 0) for r in led if r.get("kind") == "donation"),
-         "chain_ok": ok, "chain_len": n}
-    return t
+    g = giving.totals()
+    return {"nodes": len(nodes), "online": sum(1 for x in nodes.values() if x.get("status") in ("available", "busy")),
+            "jobs_done": sum(1 for j in jobs.values() if j.get("status") == "done"),
+            "jobs_queued": sum(1 for j in jobs.values() if j.get("status") == "queued"),
+            "compute_receipts": sum(1 for r in led if r.get("kind") == "compute-receipt"),
+            "gpu_seconds": sum(r.get("gpu_seconds", 0) for r in led),
+            "chain_ok": ok, "chain_len": n,
+            # giving side (donation -> asset -> income -> give -> job)
+            "donations": g["donations"], "donated_usd": g["donated_usd"],
+            "given_usd": g["given_usd"], "gives": g["gives"], "jobs_funded": g["jobs"],
+            "jobs_paid_usd": g["jobs_paid_usd"], "giving_chain_ok": g["chain_ok"], "giving_len": g["count"]}
 
 
 def worker_token():
@@ -107,6 +110,8 @@ class Hive(BaseHTTPRequestHandler):
             return self._send(200, {"chain_ok": ok, "at": n})
         if self.path == "/api/stats":
             return self._send(200, stats())
+        if self.path == "/api/giving":
+            return self._send(200, {"receipts": giving.load(), "totals": giving.totals()})
         # anything else -> serve the OpenDiabetic ops app (static)
         self._serve_static()
 
@@ -130,17 +135,27 @@ class Hive(BaseHTTPRequestHandler):
             odc._save(odc.JOBS_FILE, jobs)
             return self._send(200, {"job": jobs[jid]})
 
-        # donor intake (public) — records a hash-chained donation, no PHI
+        # donor intake -> the GIVING ledger (donation), hash-chained, no PHI
         if self.path == "/api/donate":
             b = self._body()
             form = b.get("form", "cash")
             if form not in ("cash", "compute", "device"):
                 return self._send(400, {"error": "form must be cash/compute/device"})
-            rec = odc.append_receipt({
-                "kind": "donation", "donor": (b.get("donor") or "Anonymous")[:80],
-                "form": form, "item": (b.get("item") or form)[:120],
-                "value_usd": max(0, int(b.get("value_usd") or 0)),
-                "note": (b.get("note") or "")[:200], "received_at": odc.now_iso()})
+            rec = giving.add_donation((b.get("donor") or "Anonymous"), form,
+                                      (b.get("item") or form), b.get("value_usd"), (b.get("note") or ""))
+            return self._send(200, {"ok": True, "seq": rec["seq"], "hash": rec["hash"]})
+
+        # operator records a GIVE (income recycled to a real need)
+        if self.path == "/api/give":
+            b = self._body()
+            rec = giving.add_give((b.get("to") or "?"), (b.get("need") or "?"), b.get("value_usd"),
+                                  b.get("funded", "income"), (b.get("by") or "OpenDiabetic"))
+            return self._send(200, {"ok": True, "seq": rec["seq"], "hash": rec["hash"]})
+
+        # operator records a JOB (the give created paid work)
+        if self.path == "/api/job":
+            b = self._body()
+            rec = giving.add_job((b.get("worker") or "?"), (b.get("task") or "?"), b.get("pay_usd"))
             return self._send(200, {"ok": True, "seq": rec["seq"], "hash": rec["hash"]})
 
         if self.path == "/nodes/register":
