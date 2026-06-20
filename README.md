@@ -5,6 +5,9 @@
 *OpenDiabetic is the hive. [LocalDiabetic](https://github.com/SudoSuOps/LocalDiabetic-Home-Vault)
 is the healers.*
 
+> **📖 Read [WHY.md](WHY.md) first** — the founding story, in the founder's words. It's
+> why this exists, and it's the spec for every decision here.
+
 ---
 
 ## What this is
