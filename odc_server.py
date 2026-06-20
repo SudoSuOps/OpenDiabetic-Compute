@@ -18,6 +18,7 @@ the CLI: typed data refs only, PHI-marker scan, every receipt phi_touched:false.
 
 import argparse
 import json
+import mimetypes
 import os
 import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -25,6 +26,24 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import odc  # reuse registry / firewall / ledger primitives
 
 TOKEN_FILE = os.path.join(odc.STATE_DIR, "worker_token")
+APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app")
+
+
+def stats():
+    """Public, no-PHI rollup for the OpenDiabetic ops dashboard."""
+    nodes = odc.load_nodes()
+    jobs = odc.load_jobs()
+    led = odc.load_ledger()
+    ok, n = odc.verify_ledger()
+    t = {"nodes": len(nodes), "online": sum(1 for x in nodes.values() if x.get("status") in ("available", "busy")),
+         "jobs_done": sum(1 for j in jobs.values() if j.get("status") == "done"),
+         "jobs_queued": sum(1 for j in jobs.values() if j.get("status") == "queued"),
+         "compute_receipts": sum(1 for r in led if r.get("kind") == "compute-receipt"),
+         "gpu_seconds": sum(r.get("gpu_seconds", 0) for r in led),
+         "donations": sum(1 for r in led if r.get("kind") == "donation"),
+         "donated_usd": sum(r.get("value_usd", 0) for r in led if r.get("kind") == "donation"),
+         "chain_ok": ok, "chain_len": n}
+    return t
 
 
 def worker_token():
@@ -44,9 +63,24 @@ class Hive(BaseHTTPRequestHandler):
         body = json.dumps(obj).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _serve_static(self):
+        rel = "index.html" if self.path in ("/", "") else self.path.lstrip("/").split("?")[0]
+        path = os.path.normpath(os.path.join(APP_DIR, rel))
+        if not path.startswith(APP_DIR) or not os.path.isfile(path):
+            return self._send(404, {"error": "not found"})
+        ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
+        with open(path, "rb") as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
 
     def _body(self):
         n = int(self.headers.get("Content-Length", 0))
@@ -71,7 +105,10 @@ class Hive(BaseHTTPRequestHandler):
         if self.path == "/verify":
             ok, n = odc.verify_ledger()
             return self._send(200, {"chain_ok": ok, "at": n})
-        self._send(404, {"error": "not found"})
+        if self.path == "/api/stats":
+            return self._send(200, stats())
+        # anything else -> serve the OpenDiabetic ops app (static)
+        self._serve_static()
 
     def do_POST(self):
         # foundation posts a job (firewall-enforced)
@@ -88,6 +125,19 @@ class Hive(BaseHTTPRequestHandler):
                          "posted_at": odc.now_iso(), "node": None}
             odc._save(odc.JOBS_FILE, jobs)
             return self._send(200, {"job": jobs[jid]})
+
+        # donor intake (public) — records a hash-chained donation, no PHI
+        if self.path == "/api/donate":
+            b = self._body()
+            form = b.get("form", "cash")
+            if form not in ("cash", "compute", "device"):
+                return self._send(400, {"error": "form must be cash/compute/device"})
+            rec = odc.append_receipt({
+                "kind": "donation", "donor": (b.get("donor") or "Anonymous")[:80],
+                "form": form, "item": (b.get("item") or form)[:120],
+                "value_usd": max(0, int(b.get("value_usd") or 0)),
+                "note": (b.get("note") or "")[:200], "received_at": odc.now_iso()})
+            return self._send(200, {"ok": True, "seq": rec["seq"], "hash": rec["hash"]})
 
         # everything below is a worker action -> bearer required
         if not self._authed():

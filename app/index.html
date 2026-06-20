@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenDiabetic — the hive console</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">🐝 Open<b>Diabetic</b> <span>· the hive console</span></div>
+  <nav class="tabs">
+    <button data-tab="dash" class="on">Dashboard</button>
+    <button data-tab="give">Give</button>
+    <button data-tab="node">Host a rig</button>
+    <button data-tab="admin">Admin</button>
+  </nav>
+</header>
+
+<section class="stats" id="stats"></section>
+
+<main class="wrap">
+
+  <div class="tab" id="dash">
+    <h2>Live hive <span id="chain" class="pill"></span></h2>
+    <h3>Donated compute (nodes)</h3>
+    <div class="tablewrap"><table id="nodes"><thead><tr>
+      <th>Node</th><th>Owner</th><th>Kind</th><th>GPU</th><th>Status</th><th>Jobs</th><th>GPU·s</th></tr></thead>
+      <tbody></tbody></table></div>
+    <h3>Jobs</h3>
+    <div class="tablewrap"><table id="jobs"><thead><tr>
+      <th>Job</th><th>Kind</th><th>Model</th><th>Data</th><th>Node</th><th>Status</th></tr></thead>
+      <tbody></tbody></table></div>
+    <h3>Compute ledger <span class="muted">— hash-chained, tamper-evident</span></h3>
+    <div class="tablewrap"><table id="ledger"><thead><tr>
+      <th>#</th><th>Kind</th><th>Detail</th><th>PHI</th><th>sha256</th></tr></thead>
+      <tbody></tbody></table></div>
+  </div>
+
+  <div class="tab hide" id="give">
+    <h2>Give to the hive</h2>
+    <p class="sub">Cash, compute, or a device — every gift is planted, not burned, and recorded on the
+       chain. Records never touch the compute. <a href="https://diabeticledger.com">Watch every dollar →</a></p>
+    <form id="donateForm" class="card form">
+      <label>Your name <input name="donor" placeholder="Anonymous"></label>
+      <label>Gift type
+        <select name="form">
+          <option value="cash">Cash</option>
+          <option value="compute">Compute (a GPU/rig)</option>
+          <option value="device">A device (Watch / iPhone / NAS)</option>
+        </select></label>
+      <label>What <input name="item" placeholder="e.g. RTX 5090 / Apple Watch / cash gift"></label>
+      <label>Approx. value (USD) <input name="value_usd" type="number" min="0" placeholder="0"></label>
+      <label>Note <input name="note" placeholder="optional"></label>
+      <button type="submit">Record my gift 🐝</button>
+      <p class="result" id="donateResult"></p>
+    </form>
+  </div>
+
+  <div class="tab hide" id="node">
+    <h2>Host a rig — become a node</h2>
+    <p class="sub">Keep your GPU in your own home. We route only open, non-PHI work to it — a patient
+       record can never reach it (the firewall refuses it at the boundary). Your rig earns for the people.</p>
+    <div class="card">
+      <h3>1 · Clone + run the worker</h3>
+      <pre>git clone https://github.com/SudoSuOps/OpenDiabetic-Compute.git
+cd OpenDiabetic-Compute
+python3 odc_worker.py --hive http://YOUR-HIVE:8770 --token &lt;your-token&gt; \
+  --node my-rig --owner "Your Name" --gpu "RTX 5090" --vram 32 \
+  --ollama-model llama3.2:3b --interval 20</pre>
+      <h3>2 · Your rig registers, leases jobs, returns receipts</h3>
+      <p class="muted">It heartbeats, leases NON-PHI jobs, runs them on your local model, and reports a
+         hash-chained receipt — fully visible on the dashboard.</p>
+      <a class="btn" href="mailto:build@opendiabetic.com?subject=I want to host a rig">Get a node token → build@opendiabetic.com</a>
+    </div>
+  </div>
+
+  <div class="tab hide" id="admin">
+    <h2>Post a job <span class="muted">— firewall-enforced</span></h2>
+    <p class="sub">Only OPEN/SYNTHETIC work. A vault path or PHI marker is refused with a flag.</p>
+    <form id="jobForm" class="card form">
+      <label>Kind
+        <select name="kind"><option>model-serve</option><option>dataset-build</option>
+          <option>eval</option><option>research</option><option>model-train</option></select></label>
+      <label>Model <input name="model" placeholder="diabetic-life-assistant-open"></label>
+      <label>Data ref <input name="data" placeholder="open:diabetic-education-v1"></label>
+      <label>Description <input name="desc" placeholder="serve plain-language helper"></label>
+      <button type="submit">Post job</button>
+      <p class="result" id="jobResult"></p>
+    </form>
+  </div>
+
+</main>
+<footer class="foot">OpenDiabetic is the hive · <a href="https://localdiabetic.com">LocalDiabetic</a> is the healers ·
+  <a href="https://diabeticledger.com">DiabeticLedger</a> is the proof · <span class="muted">we are math and code</span></footer>
+<script src="app.js"></script>
+</body>
+</html>
