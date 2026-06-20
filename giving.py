@@ -93,6 +93,16 @@ def add_donation(donor, form, item, value, note=""):
                    "item": item[:120], "value_usd": max(0, int(value or 0)), "note": note[:200]})
 
 
+def add_asset(asset_id, asset_type, hosted_by, from_donation=-1, location=""):
+    return append({"kind": "asset", "date": now(), "asset_id": asset_id[:60], "from_donation": from_donation,
+                   "asset_type": asset_type[:40], "hosted_by": hosted_by[:80], "location": location[:120]})
+
+
+def add_income(asset_id, source, amount, period=""):
+    return append({"kind": "income", "date": now(), "asset_id": asset_id[:60], "source": source[:120],
+                   "amount_usd": max(0, int(amount or 0)), "period": period[:80]})
+
+
 def add_give(to, need, value, funded="income", by="OpenDiabetic"):
     return append({"kind": "give", "date": now(), "recipient": to[:80], "need": need[:120],
                    "value_usd": max(0, int(value or 0)), "funded_from": funded, "fulfilled_by": by})

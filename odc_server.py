@@ -158,6 +158,18 @@ class Hive(BaseHTTPRequestHandler):
             rec = giving.add_job((b.get("worker") or "?"), (b.get("task") or "?"), b.get("pay_usd"))
             return self._send(200, {"ok": True, "seq": rec["seq"], "hash": rec["hash"]})
 
+        # operator records an ASSET placed (a rig hosted) / its INCOME earned
+        if self.path == "/api/asset":
+            b = self._body()
+            rec = giving.add_asset((b.get("id") or "?"), (b.get("type") or "?"), (b.get("hosted_by") or "?"),
+                                   b.get("from", -1), (b.get("location") or ""))
+            return self._send(200, {"ok": True, "seq": rec["seq"], "hash": rec["hash"]})
+        if self.path == "/api/income":
+            b = self._body()
+            rec = giving.add_income((b.get("asset") or "?"), (b.get("source") or "?"),
+                                    b.get("amount"), (b.get("period") or ""))
+            return self._send(200, {"ok": True, "seq": rec["seq"], "hash": rec["hash"]})
+
         if self.path == "/nodes/register":
             b = self._body()
             nodes = odc.load_nodes()
