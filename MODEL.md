@@ -58,6 +58,33 @@ fee.** We give him what he needs, light-lift compute, and **it compounds.**
 
 One NAS for Mary turned into a paid job, two more people helped, and a paying customer.
 
+## We're not a warehouse — we're a network
+
+I said we don't have supply on a shelf. Go further: **we don't even house the compute.**
+
+Say Frank donates a 5090. Frank doesn't ship it anywhere — **he keeps it in his own home
+and hosts it, no strings attached.** We just route jobs to it. The "diabetic compute
+datacenter" isn't a building we pay rent on — it's a fleet of donor rigs humming in living
+rooms across the country, and we're the router, not the landlord.
+
+And Frank isn't only a host. Frank builds websites — so when the local restaurant owner
+who's diabetic needs a site, Frank ships it. Frank is a donor, a host, **and** a vendor,
+all at once. Our "supply" is distributed the same way the compute is: vendors fill needs
+in-kind — a website, a NAS setup, a pair of shoes, a ride. We match the need to the
+neighbor who can fill it. **A matchmaker, not a warehouse.**
+
+Here's what makes it safe to run compute in a stranger's living room: **the firewall.**
+Frank's rig only ever sees open, non-PHI work — fine-tuning, hosting open models, research
+rentals. A patient's records never touch it; they stay on the patient's own box. So we get
+a national datacenter's worth of compute **without a single building, and without one
+record ever leaving home.** Distributed compute, local privacy.
+
+That's why the overhead stays lean and mean. The infrastructure lives in donors' homes.
+The labor lives in the community. There's almost nothing central to feed. **The network is
+the asset.** And the rails already run — onboarding Frank's 5090 is the same register-and-
+lease every rig uses: it registers, heartbeats, leases a job, runs it, sends back a
+receipt. This isn't a someday. The rails are live.
+
 ## The whole engine, in one picture
 
 ```
