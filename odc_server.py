@@ -111,6 +111,10 @@ class Hive(BaseHTTPRequestHandler):
         self._serve_static()
 
     def do_POST(self):
+        # ALL writes require the operator/worker bearer token (safe for public exposure;
+        # the public console reads freely, but donate/post-job/worker actions need the token).
+        if not self._authed():
+            return self._send(401, {"error": "operator token required"})
         # foundation posts a job (firewall-enforced)
         if self.path == "/jobs/post":
             b = self._body()
@@ -138,10 +142,6 @@ class Hive(BaseHTTPRequestHandler):
                 "value_usd": max(0, int(b.get("value_usd") or 0)),
                 "note": (b.get("note") or "")[:200], "received_at": odc.now_iso()})
             return self._send(200, {"ok": True, "seq": rec["seq"], "hash": rec["hash"]})
-
-        # everything below is a worker action -> bearer required
-        if not self._authed():
-            return self._send(401, {"error": "unauthorized"})
 
         if self.path == "/nodes/register":
             b = self._body()

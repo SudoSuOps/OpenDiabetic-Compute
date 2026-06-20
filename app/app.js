@@ -3,6 +3,12 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 const money = n => "$" + Number(n||0).toLocaleString("en-US");
 const j = async (u, opt) => (await fetch(u, opt)).json();
 
+// operator token (write actions only; reads are public)
+const optoken = $("#optoken");
+optoken.value = localStorage.getItem("odc_token") || "";
+optoken.onchange = () => localStorage.setItem("odc_token", optoken.value.trim());
+const authH = () => { const t = optoken.value.trim(); return t ? { "Authorization": "Bearer " + t } : {}; };
+
 // tabs
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
@@ -55,7 +61,7 @@ $("#donateForm").onsubmit = async e => {
   const f = e.target, r = $("#donateResult");
   const body = {donor:f.donor.value, form:f.form.value, item:f.item.value, value_usd:f.value_usd.value, note:f.note.value};
   try {
-    const out = await j("/api/donate", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    const out = await j("/api/donate", {method:"POST", headers:{"Content-Type":"application/json", ...authH()}, body:JSON.stringify(body)});
     if (out.ok){ r.className="result ok"; r.textContent=`Thank you 🐝 recorded on the chain — receipt #${out.seq} (${out.hash.slice(0,12)}…)`; f.reset(); refresh(); }
     else { r.className="result bad"; r.textContent = out.error || "error"; }
   } catch { r.className="result bad"; r.textContent="could not reach the hive"; }
@@ -67,7 +73,7 @@ $("#jobForm").onsubmit = async e => {
   const f = e.target, r = $("#jobResult");
   const body = {kind:f.kind.value, model:f.model.value, data:f.data.value, desc:f.desc.value};
   try {
-    const res = await fetch("/jobs/post", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    const res = await fetch("/jobs/post", {method:"POST", headers:{"Content-Type":"application/json", ...authH()}, body:JSON.stringify(body)});
     const out = await res.json();
     if (res.status === 200){ r.className="result ok"; r.textContent=`Posted ${out.job.id} (phi:false, firewall passed)`; f.reset(); refresh(); }
     else { r.className="result bad"; r.textContent=`🚩 REFUSED — ${out.detail || out.error}`; }

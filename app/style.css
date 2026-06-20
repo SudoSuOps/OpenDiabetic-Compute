@@ -13,6 +13,9 @@ a{color:var(--blue);text-decoration:none}
 .tabs button{background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:9px;
  padding:8px 14px;cursor:pointer;font-size:14px;font-weight:600}
 .tabs button.on{background:var(--honey);color:#1a1205;border-color:var(--honey)}
+#optoken{background:var(--ink);border:1px solid var(--line);color:var(--fg);border-radius:9px;
+ padding:8px 12px;font-size:13px;width:130px}
+#optoken:focus{outline:2px solid var(--honey);border-color:var(--honey)}
 .stats{max-width:1080px;margin:18px auto;padding:0 18px;display:grid;
  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
 .stats .s{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
